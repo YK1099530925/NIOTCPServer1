@@ -1,5 +1,8 @@
 package tcpserver.handledata;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 //处理数据
 public class HandleData {
 	
@@ -18,15 +21,15 @@ public class HandleData {
 		// 1、拆分数据
 		String[] dataStr = splitData(dataString);
 		// 2、解析数据
-		if (dataStr.length == 4) {// 解析其他的数据
+		if (dataStr.length == 5) {// 解析其他的数据
 			dataStr = resolveOtherData(dataStr);
-		} else if (dataStr.length == 5) {// 解析空气和土壤的数据
+		} else if (dataStr.length == 6) {// 解析空气和土壤的数据
 			dataStr = resolveAirAndSoilData(dataStr);
 		} else {
 			System.err.println("错误");
 		}
 		//处理完之后打印一下数据
-		//printData(dataStr);
+		printData(dataStr);
 		return dataStr;
 	}
 	
@@ -46,9 +49,9 @@ public class HandleData {
 		// 判断（因为有温湿度的需要5个空间，co2和光照只需要4个空间）
 		String[] dataStr = null;
 		if (dataString.length() <= 50) {
-			dataStr = new String[4];
-		} else {
 			dataStr = new String[5];
+		} else {
+			dataStr = new String[6];
 		}
 		splitData1(dataStr, dataString);
 		splitData2(dataStr, dataString);
@@ -66,15 +69,18 @@ public class HandleData {
 
 	// 拆分后面的数据
 	public String[] splitData2(String[] dataStr, String dataString) {
+		Date dateNow = new Date();
+		SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 		int len = dataString.length() / 2;
-		if (dataStr.length == 4) {
+		if (dataStr.length == 5) {
 			// 判断，因为字段为4个的数据域的位也有不同
 			if (len == 24) {// 长度是24个16进制数（截取倒数第2个）
 				dataStr[3] = dataString.substring((len - 2) * 2, (len - 1) * 2);
 			} else if (len == 25) {// 长度为25个16进制数(所以截取倒数第2和第3位)
 				dataStr[3] = dataString.substring((len - 3) * 2, (len - 1) * 2);
 			}
-		} else if (dataStr.length == 5) {
+			dataStr[4] = df.format(dateNow);
+		} else if (dataStr.length == 6) {
 			if (dataStr[2].equals("b3")) {// b3：空气温湿度（前两位表示温度，后一位表示湿度）
 				dataStr[3] = dataString.substring((len - 4) * 2, (len - 2) * 2);
 				dataStr[4] = dataString.substring((len - 2) * 2, (len - 1) * 2);
@@ -82,7 +88,7 @@ public class HandleData {
 				dataStr[3] = dataString.substring((len - 3) * 2, (len - 1) * 2);
 				dataStr[4] = dataString.substring((len - 4) * 2, (len - 3) * 2);
 			}
-
+			dataStr[5] = df.format(dateNow);
 		} else {
 			System.out.println("异常");
 		}
@@ -104,12 +110,12 @@ public class HandleData {
 	 */
 	public String[] resolveAirAndSoilData(String[] dataStr) {
 		//温度换算
-		String temperature = dataStr[dataStr.length-2].substring(2, 4) + dataStr[dataStr.length-2].substring(0, 2);
+		String temperature = dataStr[3].substring(2, 4) + dataStr[3].substring(0, 2);
 		double temFormatDouble = ((double) Integer.parseInt(temperature,16) - 400) / 10;
 		//湿度转换
-		String humidity = dataStr[dataStr.length-1].substring(0, 2);
-		dataStr[dataStr.length-2] = temFormatDouble + "°C";
-		dataStr[dataStr.length-1] = Integer.parseInt(humidity, 16) + "%";
+		String humidity = dataStr[4].substring(0, 2);
+		dataStr[3] = temFormatDouble + "°C";
+		dataStr[4] = Integer.parseInt(humidity, 16) + "";
 		return dataStr;
 	}
 	

@@ -32,7 +32,7 @@ public class TcpServer {
 			// 实例化一个通道
 			ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
 			// 将通道绑定到指定端口(6789)
-			serverSocketChannel.socket().bind(new InetSocketAddress(6789));
+			serverSocketChannel.socket().bind(new InetSocketAddress(7890));
 			// 配置通道为非阻塞模式
 			serverSocketChannel.configureBlocking(false);
 			// 将选择器注册到通道上
@@ -86,6 +86,10 @@ public class TcpServer {
 		channel.configureBlocking(false);
 		// 将读注册到选择器中
 		channel.register(selector, SelectionKey.OP_READ);
+		
+		//发送给设备查询语句（如何实现每隔10秒发送一次）
+		String sentDEV = "FE12245FCD0B004C001A13363136343239480231B3002C";
+		sentDataClient(channel, sentDEV);
 	}
 
 	//处理数据
@@ -116,8 +120,6 @@ public class TcpServer {
 				}
 			}
 			byteBuffer.clear();
-			// 4、发送数据到客户端
-			sentDataClient(socketChannel, dataString);
 		}
 		if (count < 0) {
 			socketChannel.close();
