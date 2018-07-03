@@ -3,7 +3,12 @@ package tcpserver.handledata;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-//处理数据
+/**
+ * 数据处理
+ * handle：返回一个字符串数组（16进制字符串数组）
+ * @author YangKuan
+ *
+ */
 public class HandleData {
 	
 	/**
@@ -29,7 +34,6 @@ public class HandleData {
 			System.err.println("错误");
 		}
 		//处理完之后打印一下数据
-		printData(dataStr);
 		return dataStr;
 	}
 	

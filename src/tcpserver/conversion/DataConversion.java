@@ -2,6 +2,15 @@ package tcpserver.conversion;
 
 import java.nio.ByteBuffer;
 
+/**
+ * 数据转换 
+ * byteBufferToByteArray：buffer转byte数组
+ * byteArraytoHexString ：byte数组转string（16进制字符串（如：fe12bd...））
+ * hexStringtoByteArray ：string（16进制字符串（如：fe12bd...））转byte数组
+ * 
+ * @author YangKuan
+ *
+ */
 public class DataConversion {
 	
 	/**

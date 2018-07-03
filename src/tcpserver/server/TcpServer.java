@@ -9,19 +9,47 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
 
+import tcpserver.acceptappoint.AcceptAppoint;
 import tcpserver.conversion.DataConversion;
 import tcpserver.handledata.HandleData;
 import tcpserver.savedata.SaveData;
+import tcpserver.thread.SendDevRunnable;
 
 public class TcpServer {
 	
 	private static final int BUFSIZE = 1024;
 	
-	private DataConversion dataConversion = new DataConversion();
+	DataConversion dataConversion = new DataConversion();
 	
-	private HandleData handleData = new HandleData();
+	HandleData handleData = new HandleData();
 	
-	private SaveData saveData = new SaveData();
+	SaveData saveData = new SaveData();
+	
+	AcceptAppoint acceptAppoint = new AcceptAppoint();
+	
+	/**
+	 * 1：空气温湿度：FE12245FCD0B004C001A13363136343239480231B3002C
+	 * 2：空气温湿度：FE12245FCA0B0048004813363136343239480231B3007D
+	 * 3：二氧化碳    ：FE12245F9C130041005301473331383430380231D00057
+	 * 4：土壤温湿度：FE12245FAC0F003F005410473435323236370231A50060
+	 * 5：光照强度    ：FE12245F5A1B002D004E02473331383430380231C000FB
+	 */
+	
+	/**
+	 * 调用设备组
+	 */
+	private String sendDevStrArray[] = {
+			"FE12245FCD0B004C001A13363136343239480231B3002C",
+			"FE12245FCA0B0048004813363136343239480231B3007D",
+			"FE12245F9C130041005301473331383430380231D00057",
+			"FE12245FAC0F003F005410473435323236370231A50060",
+			"FE12245F5A1B002D004E02473331383430380231C000FB"
+	};
+	
+	/**
+	 * 接收数据组（存放设备标志），用于判断是否是我们调用的设备发送的数据
+	 */
+	private String acceptAppointStrArray[] = new String[sendDevStrArray.length];
 
 	public void tcpServer() {
 		ByteBuffer byteBuffer;
@@ -32,7 +60,7 @@ public class TcpServer {
 			// 实例化一个通道
 			ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
 			// 将通道绑定到指定端口(6789)
-			serverSocketChannel.socket().bind(new InetSocketAddress(7890));
+			serverSocketChannel.socket().bind(new InetSocketAddress(6789));
 			// 配置通道为非阻塞模式
 			serverSocketChannel.configureBlocking(false);
 			// 将选择器注册到通道上
@@ -87,9 +115,12 @@ public class TcpServer {
 		// 将读注册到选择器中
 		channel.register(selector, SelectionKey.OP_READ);
 		
-		//发送给设备查询语句（如何实现每隔10秒发送一次）
-		String sentDEV = "FE12245FCD0B004C001A13363136343239480231B3002C";
-		sentDataClient(channel, sentDEV);
+		//获取接收组
+		acceptAppointStrArray = acceptAppoint.acceptData(sendDevStrArray);
+		
+		//开启一个线程用于发送
+		Thread sendThread = new Thread(new SendDevRunnable(channel, sendDevStrArray));
+		sendThread.start();
 	}
 
 	//处理数据
@@ -114,9 +145,14 @@ public class TcpServer {
 				dataString = dataConversion.byteArraytoHexString(dataByte);
 				// 2、处理数据
 				String[] handle = handleData.handle(dataString);
-				// 3、保存数据
+				// 3、保存数据指定数据
 				if(handle != null) {
-					saveData.saveData(handle);
+					//保存我们指定接收的数据
+					if(acceptAppoint.interceptData(handle, acceptAppointStrArray)) {
+						//打印将保存数据
+						handleData.printData(handle);
+						saveData.saveData(handle);
+					}
 				}
 			}
 			byteBuffer.clear();
@@ -127,7 +163,7 @@ public class TcpServer {
 	}
 
 	// 向客户端发送数据
-	public void sentDataClient(SocketChannel socketChannel, String str) throws IOException {
+	public void sendDataClient(SocketChannel socketChannel, String str) throws IOException {
 		ByteBuffer sentBuffer = ByteBuffer.allocateDirect(str.length());
 		byte[] b = dataConversion.hexStringtoByteArray(str);
 		sentBuffer.put(ByteBuffer.wrap(b));

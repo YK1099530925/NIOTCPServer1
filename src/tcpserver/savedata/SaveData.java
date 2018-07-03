@@ -2,6 +2,11 @@ package tcpserver.savedata;
 
 import tcpserver.sql.SqlHelper;
 
+/**
+ * ±£´æÊý¾Ý
+ * @author YangKuan
+ *
+ */
 public class SaveData {	
 	private SqlHelper sqlHelper = new SqlHelper();
 	/**

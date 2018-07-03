@@ -8,7 +8,11 @@ import java.util.Properties;
 import javax.sql.DataSource;
 import com.mchange.v2.c3p0.DataSources;
 
-//获取c3p0连接
+/**
+ * c3p0连接池，获取数据库连接
+ * @author YangKuan
+ *
+ */
 public class ConnectionMysql {
 	private static final String JDBC_DRIVER = "driverClass";
 	private static final String JDBC_URL = "jdbcUrl";
