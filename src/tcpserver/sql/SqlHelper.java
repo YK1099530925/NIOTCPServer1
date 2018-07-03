@@ -29,6 +29,8 @@ public class SqlHelper {
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
+		}finally {
+			close(conn, pstmt, rSet);
 		}
 	}
 
@@ -47,6 +49,35 @@ public class SqlHelper {
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
+		}finally {
+			close(conn, pstmt, rSet);
+		}
+	}
+	
+	/**
+	 * πÿ±’¡¨Ω”
+	 */
+	public void close(Connection conn,PreparedStatement pstmt, ResultSet rSet) {
+		if(conn != null) {
+			try {
+				conn.close();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+		if(pstmt != null) {
+			try {
+				pstmt.close();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}				
+		}
+		if(rSet != null) {
+			try {
+				rSet.close();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 }

@@ -36,10 +36,11 @@ public class TcpServer {
 	 */
 	
 	/**
-	 * 调用设备组
+	 * 调用设备组 "FE12245FCD0B004C001A13363136343239480231B3002C",
+	 * 
 	 */
 	private String sendDevStrArray[] = {
-			"FE12245FCD0B004C001A13363136343239480231B3002C",
+			
 			"FE12245FCA0B0048004813363136343239480231B3007D",
 			"FE12245F9C130041005301473331383430380231D00057",
 			"FE12245FAC0F003F005410473435323236370231A50060",
@@ -66,7 +67,7 @@ public class TcpServer {
 			// 将选择器注册到通道上
 			serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
 			// 初始化缓冲区的大小
-			byteBuffer = ByteBuffer.allocateDirect(BUFSIZE);
+			byteBuffer = ByteBuffer.allocateDirect(60);
 			// 不断轮询select方法，获取准备好的通道关联的key集
 			while (true) {
 				// 一直等待，直到有通道准备好了数据的传输，在此处异步执行其他任务（3000为select方法等待信道准备好的最长时间）
@@ -144,9 +145,13 @@ public class TcpServer {
 				// ②将byte[]转换成String
 				dataString = dataConversion.byteArraytoHexString(dataByte);
 				// 2、处理数据
-				String[] handle = handleData.handle(dataString);
+				String[] handle = null;
+				if(dataString != null) {
+					handle = handleData.handle(dataString);
+				}
 				// 3、保存数据指定数据
 				if(handle != null) {
+					//System.out.println("wifiid:" + handle[0]);
 					//保存我们指定接收的数据
 					if(acceptAppoint.interceptData(handle, acceptAppointStrArray)) {
 						//打印将保存数据

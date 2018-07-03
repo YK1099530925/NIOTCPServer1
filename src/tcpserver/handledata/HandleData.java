@@ -17,8 +17,9 @@ public class HandleData {
 	 * @param dataString
 	 */
 	public String[] handle(String dataString) {
+		System.out.println("dataString:" + dataString + "-" + "长度:" + dataString.length());
 		// 截取第三个16进制
-		String str = dataString.substring((3 - 1) * 2, (4 - 1) * 2);
+		String str = dataString.substring(2 * 2, 3 * 2);
 		// 判断是否是44，如果是，就进行存储，如果不是，就直接返回
 		if (!str.equals("44")) {
 			return null;
@@ -26,12 +27,15 @@ public class HandleData {
 		// 1、拆分数据
 		String[] dataStr = splitData(dataString);
 		// 2、解析数据
+		if(dataStr == null){
+			return null;
+		}
 		if (dataStr.length == 5) {// 解析其他的数据
 			dataStr = resolveOtherData(dataStr);
 		} else if (dataStr.length == 6) {// 解析空气和土壤的数据
 			dataStr = resolveAirAndSoilData(dataStr);
 		} else {
-			System.err.println("错误");
+			System.err.println("dataString超出52，接收到的数据有误");
 		}
 		//处理完之后打印一下数据
 		return dataStr;
@@ -39,9 +43,10 @@ public class HandleData {
 	
 	//打印转换后的数据
 	public void printData(String[] dataStr) {
-		for (String str : dataStr) {
+		/*for (String str : dataStr) {
 			System.err.println(str);
-		}
+		}*/
+		System.err.println("保存的wifiid为：" + dataStr[0]);
 	}
 	
 	/**
@@ -52,10 +57,15 @@ public class HandleData {
 	public String[] splitData(String dataString) {
 		// 判断（因为有温湿度的需要5个空间，co2和光照只需要4个空间）
 		String[] dataStr = null;
-		if (dataString.length() <= 50) {
+		if(dataString.length() < 46) {
+			return null;
+		}else if (dataString.length() <= 50) {
 			dataStr = new String[5];
-		} else {
+		} else if(dataString.length() == 52){
 			dataStr = new String[6];
+		}else if(dataString.length() > 52){
+			System.err.println("出现合并状况");
+			return null;
 		}
 		splitData1(dataStr, dataString);
 		splitData2(dataStr, dataString);
@@ -66,6 +76,7 @@ public class HandleData {
 	// 拆分前三个数据
 	public String[] splitData1(String[] dataStr, String dataString) {
 		dataStr[0] = dataString.substring((5 - 1) * 2, (5 - 1 + 2) * 2);
+		//第二个问题：此处报出问题:String index out of range: 36
 		dataStr[1] = dataString.substring((7 - 1) * 2, (7 - 1 + 12) * 2);
 		dataStr[2] = dataString.substring((21 - 1) * 2, (21 - 1 + 1) * 2);
 		return dataStr;
@@ -91,6 +102,10 @@ public class HandleData {
 			} else if (dataStr[2].equals("a5")) {// a5：土壤温湿度（前一位表示温度，后两位表示湿度），将后两位截取到dataStr[3]中，与b3保持一致
 				dataStr[3] = dataString.substring((len - 3) * 2, (len - 1) * 2);
 				dataStr[4] = dataString.substring((len - 4) * 2, (len - 3) * 2);
+			}else {
+				//如果不为b3或a5，那就与b3操作一样
+				dataStr[3] = dataString.substring((len - 4) * 2, (len - 2) * 2);
+				dataStr[4] = dataString.substring((len - 2) * 2, (len - 1) * 2);
 			}
 			dataStr[5] = df.format(dateNow);
 		} else {

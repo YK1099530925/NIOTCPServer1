@@ -66,6 +66,7 @@ public class ConnectionMysql {
 	}
 	
 	public static synchronized Connection getConnction() throws SQLException {
+		//第一个问题：出现An attempt by a client to checkout a Connection has timed out.连接超时的现象(原因是因为在连接完数据库之后，没有进行close操作，导致连接一直被占用，然后导致一直打开新的连接，最后连接超出最大连接数)
 		Connection conn = ds.getConnection();
 		return conn;
 	}
