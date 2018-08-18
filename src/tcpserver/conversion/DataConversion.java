@@ -14,6 +14,17 @@ import java.nio.ByteBuffer;
 public class DataConversion {
 	
 	/**
+	 * 将bytebuffer转16进制字符串
+	 * @param buffer
+	 * @return
+	 */
+	public String byteBufferToHexstring(ByteBuffer buffer) {
+		byte[] byteBufferToByteArray = byteBufferToByteArray(buffer);
+		String byteArraytoHexString = byteArraytoHexString(byteBufferToByteArray);
+		return byteArraytoHexString;
+	}
+	
+	/**
 	 * 将ByteBuffer转换成byte[]数组
 	 * 
 	 * @param buffer

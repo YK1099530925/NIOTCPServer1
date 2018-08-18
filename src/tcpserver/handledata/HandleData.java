@@ -17,10 +17,9 @@ public class HandleData {
 	 * @param dataString
 	 */
 	public String[] handle(String dataString) {
-		System.out.println("dataString:" + dataString + "-" + "长度:" + dataString.length());
 		// 截取第三个16进制
 		String str = dataString.substring(2 * 2, 3 * 2);
-		// 判断是否是44，如果是，就进行存储，如果不是，就直接返回
+		// 判断是否是44，如果是，就进行数据解析，如果不是，就直接返回
 		if (!str.equals("44")) {
 			return null;
 		}
@@ -50,6 +49,7 @@ public class HandleData {
 	}
 	
 	/**
+	 * 接收的数据的长度，在[48-52]之间（闭区间），因此大于和小于的直接排除掉
 	 * 拆分数据(前三个数据是不变的，因此可以将前个数据提取出来) 第0个数据：无线id 第1个数据：设备标识 第2个数据：设备类型
 	 * 
 	 * @return

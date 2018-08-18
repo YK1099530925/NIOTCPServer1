@@ -8,6 +8,7 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
+import java.util.Map;
 
 import tcpserver.acceptappoint.AcceptAppoint;
 import tcpserver.conversion.DataConversion;
@@ -17,7 +18,7 @@ import tcpserver.thread.SendDevRunnable;
 
 public class TcpServer {
 	
-	private static final int BUFSIZE = 1024;
+	//private static final int BUFSIZE = 1024;
 	
 	DataConversion dataConversion = new DataConversion();
 	
@@ -27,31 +28,33 @@ public class TcpServer {
 	
 	AcceptAppoint acceptAppoint = new AcceptAppoint();
 	
+	Thread sendThread;
+	
 	/**
 	 * 1：空气温湿度：FE12245FCD0B004C001A13363136343239480231B3002C
-	 * 2：空气温湿度：FE12245FCA0B0048004813363136343239480231B3007D
-	 * 3：二氧化碳    ：FE12245F9C130041005301473331383430380231D00057
-	 * 4：土壤温湿度：FE12245FAC0F003F005410473435323236370231A50060
-	 * 5：光照强度    ：FE12245F5A1B002D004E02473331383430380231C000FB
+	 * 
+	 * 2：土壤温湿度：FE12245FAC0F003F005410473435323236370231A50060
+	 * 3：空气温湿度：FE12245FCA0B0048004813363136343239480231B3007D
+	 * 4：光照强度    ：FE12245F5A1B002D004E02473331383430380231C000FB
+	 * 5：二氧化碳    ：FE12245F9C130041005301473331383430380231D00057
 	 */
 	
 	/**
-	 * 调用设备组 "FE12245FCD0B004C001A13363136343239480231B3002C",
+	 * 发送的数据组
 	 * 
 	 */
 	private String sendDevStrArray[] = {
-			
+			"FE12245FCF0B002A003A0A473132323435310231B30071",
+			"FE12245F671B0033003C0D473132323737350231C000A7"
+			/*"FE12245FAC0F003F005410473435323236370231A50060",
 			"FE12245FCA0B0048004813363136343239480231B3007D",
-			"FE12245F9C130041005301473331383430380231D00057",
-			"FE12245FAC0F003F005410473435323236370231A50060",
-			"FE12245F5A1B002D004E02473331383430380231C000FB"
+			"FE12245F5A1B002D004E02473331383430380231C000FB",
+			"FE12245F9C130041005301473331383430380231D00057"*/
 	};
-	
-	/**
-	 * 接收数据组（存放设备标志），用于判断是否是我们调用的设备发送的数据
-	 */
-	private String acceptAppointStrArray[] = new String[sendDevStrArray.length];
 
+	/**
+	 * 打开6789端口，接收设备数据
+	 */
 	public void tcpServer() {
 		ByteBuffer byteBuffer;
 		System.out.println("服务器启动");
@@ -116,12 +119,9 @@ public class TcpServer {
 		// 将读注册到选择器中
 		channel.register(selector, SelectionKey.OP_READ);
 		
-		//获取接收组
-		acceptAppointStrArray = acceptAppoint.acceptData(sendDevStrArray);
-		
 		//开启一个线程用于发送
-		Thread sendThread = new Thread(new SendDevRunnable(channel, sendDevStrArray));
-		sendThread.start();
+		sendThread = new Thread(new SendDevRunnable(channel, sendDevStrArray));
+		//sendThread.start();
 	}
 
 	//处理数据
@@ -131,35 +131,40 @@ public class TcpServer {
 		// 存放客户端发送过来的数据
 		String dataString = "";
 		int count;
-		// 清除缓冲区（此处清除不能实际擦出buffer中的数据，而是回归各个标志位）
-		byteBuffer.clear();
 		// 从通道中读取数据到缓冲区中，读到最后没有数据则返回-1
 		while ((count = socketChannel.read(byteBuffer)) > 0) {
 			// 将模式转换为读模式
 			byteBuffer.flip();
 			// hasRemaining告知当前位置和限制之间是否存在任何元素
 			while (byteBuffer.hasRemaining()) {
-				// 1、解析客户端发送过来的16进制数据(返回的是String])
-				// ①将byteBuffer转换为byte[]数组
-				byte[] dataByte = dataConversion.byteBufferToByteArray(byteBuffer);
-				// ②将byte[]转换成String
-				dataString = dataConversion.byteArraytoHexString(dataByte);
-				// 2、处理数据
+				// 1、转换客户端发送过来的16进制数据转成hexstring
+				dataString = dataConversion.byteBufferToHexstring(byteBuffer);
+				// 2、处理数据（只对数据做处理，不做逻辑判断）
 				String[] handle = null;
 				if(dataString != null) {
 					handle = handleData.handle(dataString);
 				}
-				// 3、保存数据指定数据
+				// 3、保存数据指定数据（逻辑判断，判断当前正在发送的数据是否有数据响应，如果有响应，则保存）
+				//正在发送的数据
+				String sendingValueStr = "";
 				if(handle != null) {
-					//System.out.println("wifiid:" + handle[0]);
-					//保存我们指定接收的数据
-					if(acceptAppoint.interceptData(handle, acceptAppointStrArray)) {
-						//打印将保存数据
-						handleData.printData(handle);
+					//遍历acceptMap，获取正在发送的数据(当数组完成之后，没有一个数据处于发送，因此sendingValueStr会为空)
+					for(Map.Entry<String, Integer> mEntry : SendDevRunnable.acceptMap.entrySet()) {
+						if(mEntry.getValue() == 1) {
+							sendingValueStr = mEntry.getKey();
+						}
+					}
+					
+					//拦截需要接受的数据
+					if(sendingValueStr.length() != 0 && acceptAppoint.interceptData(handle, sendingValueStr)) {
+						//当前数据有响应，则设置发送成功标志
+						SendDevRunnable.acceptSuccess = true;
+						//保存数据
 						saveData.saveData(handle);
 					}
 				}
 			}
+			// 清除缓冲区（此处清除不是擦出buffer中的数据，而是回归各个标志位），不进行这一步，byteBuffer.hasRemaining()会为false
 			byteBuffer.clear();
 		}
 		if (count < 0) {
